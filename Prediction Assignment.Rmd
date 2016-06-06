@@ -1,0 +1,136 @@
+---
+title: "Prediction Assignment"
+author: "Vimal Natarajan"
+date: "June 5, 2016"
+output: html_document
+---
+
+##Introduction
+
+Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement - a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it. In this project, your goal will be to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways. More information is available from the website here: http://groupware.les.inf.puc-rio.br/har (see the section on the Weight Lifting Exercise Dataset).
+
+
+##Data
+
+The training data for this project are available here:
+
+https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv
+
+The test data are available here:
+
+https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv
+
+The data for this project come from this source: http://groupware.les.inf.puc-rio.br/har. If you use the document you create for this class for any purpose please cite them as they have been very generous in allowing their data to be used for this kind of assignment.
+
+
+##Goal
+
+The goal of your project is to predict the manner in which they did the exercise. This is the "classe" variable in the training set. 
+
+
+##Data Processing
+
+The outcome variable is the "classe" variable, a factor variable with 5 levels. The participants were asked to perform one set of 10 repetitions of the Unilateral Dumbbell Biceps Curl in 5 different ways:
+
+Class A: exactly according to the specification
+Class B: throwing the elbows to the front 
+Class C: lifting the dumbbell only halfway 
+Class D: lowering the dumbbell only halfway
+Class E: throwing the hips to the front
+
+```{R echo=FALSE}
+
+options(warn=-1)
+suppressMessages(library(caret))
+suppressMessages(library(randomForest))
+suppressMessages(library(rpart))
+suppressMessages(library(rpart.plot))
+suppressMessages(library(rattle))
+
+```
+
+###Getting data
+
+Getting the training and testing data.
+
+```{R}
+
+training <- read.csv("pml-training.csv", na.strings=c("NA","#DIV/0!",""))
+testing <- read.csv("pml-testing.csv", na.strings=c("NA","#DIV/0!",""))
+
+```
+
+###Delete columns with all missing values
+
+```{R}
+
+training<-training[,colSums(is.na(training)) == 0]
+testing <-testing[,colSums(is.na(testing)) == 0]
+```
+
+###Remove unwanted columns
+
+Some columns namely user_name,raw_timestamp_part_1,raw_timestamp_part_2,cvtd_timestamp,new_window,	num_window are not relevant here and can be removed.
+
+```{R}
+training   <-training[,-c(1:7)]
+testing <-testing[,-c(1:7)]
+```
+
+##Cross validation
+
+To perform cross validation, the training data is split into two, with 70% of the data for sub-training and 30% for sub-testing. Once the model is tested against this sub-testing data, then it will again be tested against the testing data.
+
+###Partioning the training set into two
+
+Partioning Training data set into two data sets, 70% for mytraining, 30% for mytesting:
+
+```{R}
+inTrain <- createDataPartition(y=training$classe, p=0.7, list=FALSE)
+mytraining <- training[inTrain, ] 
+mytesting <- training[-inTrain, ]
+dim(mytraining)
+dim(mytesting)
+```
+
+##Choosing models
+
+Two models, namely Decision Tree and RandomForest, will be used for testing. The model with highest accuracy will be used as final model.
+
+###ML Algorithm 1: Decision Tree
+
+```{R}
+modelFit_DT <- rpart(classe ~ ., data=mytraining, method="class")
+fancyRpartPlot(modelFit_DT)
+```
+
+####Prediction on ML using Decision Tree
+```{R}
+predictions_DT <- predict(modelFit_DT, mytesting, type = "class")
+confusionMatrix(predictions_DT, mytesting$classe)
+```
+
+
+###ML Algorithm 2: Random Forest
+
+```{R}
+modelFit_RF <- randomForest(classe ~ ., data=mytraining, method = "class")
+```
+
+####Prediction on ML using Random Forest
+```{R}
+predictions_RF <- predict(modelFit_RF, mytesting, type = "class")
+confusionMatrix(predictions_RF, mytesting$classe)
+```
+
+###Decision on model
+
+Comparing the two models, it is clear that the Random Forest model is better in accuracy than the Decision Tree, so Random Forest will be used for the final testing.
+
+##Submission
+```{R}
+final_prediction <- predict(modelFit_RF, testing, type="class")
+final_prediction
+```
+
+###End of Report
