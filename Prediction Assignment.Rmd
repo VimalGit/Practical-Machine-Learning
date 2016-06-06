@@ -133,4 +133,10 @@ final_prediction <- predict(modelFit_RF, testing, type="class")
 final_prediction
 ```
 
+#Compiled HTML page with results that can be viewed online.
+
+http://vimalgit.github.io/Prediction_Assignment.html
+
+
+
 ###End of Report
